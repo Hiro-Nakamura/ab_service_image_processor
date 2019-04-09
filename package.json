@@ -1,0 +1,29 @@
+{
+  "name": "image_processor",
+  "version": "0.0.0",
+  "description": "Rotate and resize images",
+  "main": "app.js",
+  "author": "Johnny Hausman",
+  "license": "MIT",
+  "dependencies": {
+    "ab-utils": "Hiro-Nakamura/ab-utils",
+    "cote": "^0.19.1",
+    "nodemon": "^1.18.10",
+    "mysql": "^2.16.0",
+    "async": "^2.6.1",
+    "forever": "^0.15.3",
+    "uuid": "^3.3.2"
+  },
+  "scripts": {
+    "dev": "node_modules/.bin/nodemon --inspect-brk=0.0.0.0:9229 app.js",
+    "devBuild": "run-script-os",
+    "devInstall": "run-script-os",
+    "devBuild:win32": "del node_modules\\.yarn-integrity && docker run -it --mount type=bind,source=%cd%,target=/app -w /app node yarn",
+    "devInstall:win32": "docker run -it --mount type=bind,source=%cd%,target=/app -w /app node bash",
+    "devBuild:darwin:linux": "rm node_modules/.yarn-integrity && docker run -it --mount type=bind,source=\"$(pwd)\",target=/app -w /app node yarn",
+    "devInstall:darwin:linux": "docker run -it --mount type=bind,source=\"$(pwd)\",target=/app -w /app node bash"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.0.5"
+  }
+}
