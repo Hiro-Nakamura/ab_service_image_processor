@@ -24,6 +24,8 @@
     "devInstall:darwin:linux": "docker run -it --mount type=bind,source=\"$(pwd)\",target=/app -w /app node bash"
   },
   "devDependencies": {
-    "run-script-os": "^1.0.5"
+    "run-script-os": "^1.0.5",
+    "mocha": "^6.0.2",
+    "eslint": "^5.11.1"
   }
 }
