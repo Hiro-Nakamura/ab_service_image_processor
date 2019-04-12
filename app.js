@@ -9,7 +9,7 @@ const connections = AB.config('datastores');
 
 
 // Start the service
-new ImageProcessor({ 
+new ImageProcessor({
     name: "Image Processor",
     config: config,
     connections: connections

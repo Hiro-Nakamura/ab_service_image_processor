@@ -252,4 +252,4 @@ module.exports = class ImageProcessor extends AB.service {
             else cb(null, processedImages);
         });
     }
-}
+};
