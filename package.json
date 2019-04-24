@@ -7,14 +7,15 @@
   "license": "MIT",
   "dependencies": {
     "ab-utils": "Hiro-Nakamura/ab-utils",
-    "cote": "^0.19.1",
-    "nodemon": "^1.18.10",
-    "mysql": "^2.16.0",
     "async": "^2.6.1",
+    "cote": "^0.19.1",
     "forever": "^0.15.3",
+    "mysql": "^2.16.0",
+    "nodemon": "^1.18.10",
     "uuid": "^3.3.2"
   },
   "scripts": {
+    "test": "test/test.sh",
     "dev": "node_modules/.bin/nodemon --inspect-brk=0.0.0.0:9229 app.js",
     "devBuild": "run-script-os",
     "devInstall": "run-script-os",
@@ -24,8 +25,9 @@
     "devInstall:darwin:linux": "docker run -it --mount type=bind,source=\"$(pwd)\",target=/app -w /app node bash"
   },
   "devDependencies": {
-    "run-script-os": "^1.0.5",
+    "eslint": "^5.11.1",
     "mocha": "^6.0.2",
-    "eslint": "^5.11.1"
+    "chai": "^4.2.0",
+    "run-script-os": "^1.0.5"
   }
 }
