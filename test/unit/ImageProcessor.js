@@ -52,7 +52,7 @@ before(function(done) {
 });
 
 describe("image_processor", function() {
-    describe("initialization", function() {
+    describe("constructor()", function() {
         it("should emit 'error' if invalid DB config", function(done) {
             const obj = new ImageProcessor({
                 name: "Image Processor bad DB",
@@ -132,7 +132,7 @@ describe("image_processor", function() {
             connections: {}
         });
 
-        describe("constructor", function() {
+        describe("initialization", function() {
             it("should reject invalid `sourceFile` parameter", function(done) {
                 obj.processImage(
                     {
@@ -365,7 +365,14 @@ describe("image_processor", function() {
                 // processImage() will emit this during the mock SQL query
                 obj.once("mockQuery", (mock) => {
                     expect(mock.sql).to.match(/^\s*insert\s+into/i);
-                    expect(mock.params).to.include(appKey);
+                    // column names
+                    expect(mock.sql).has.string("app_key");
+                    expect(mock.sql).has.string("uuid");
+                    expect(mock.sql).has.string("size");
+                    expect(mock.sql).has.string("type");
+                    // values
+                    expect(mock.params).to.include(appKey); // appKey
+                    expect(mock.params).to.include(0); // image size
                     mock.callback(null, { insertId: 1 });
                 });
             });
@@ -380,15 +387,14 @@ describe("image_processor", function() {
                     },
                     (err, processedImages) => {
                         expect(err).is.an("error");
-                        expect(err).has.property("code");
-                        expect(err.code).is.string("DUM");
+                        expect(err).has.property("code", "E_DUM");
                         done();
                     }
                 );
                 // processImage() will emit this during the mock SQL query
                 obj.once("mockQuery", (mock) => {
                     var dummyError = new Error("Dummy");
-                    dummyError.code = "DUM";
+                    dummyError.code = "E_DUM";
                     mock.callback(dummyError);
                 });
             });
@@ -401,7 +407,7 @@ after(function(done) {
         if (err) console.error(err);
         fs.unlink("/tmp/" + sourceFile, (err) => {
             if (err) console.error(err);
-            else done();
+            done();
         });
     });
 });

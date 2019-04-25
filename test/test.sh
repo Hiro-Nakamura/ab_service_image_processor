@@ -9,4 +9,4 @@ export PATH=$THISDIR/bin:$PATH
 $THISDIR/../node_modules/.bin/eslint $THISDIR/../*.js $THISDIR/../src && echo '✔  Your .js files look good.'
 
 # unit tests
-$THISDIR/../node_modules/.bin/mocha --reporter dot $THISDIR/bootstrap.test.js $THISDIR/**/*.js
+$THISDIR/../node_modules/.bin/mocha --reporter spec $THISDIR/bootstrap.test.js $THISDIR/unit/*.js
