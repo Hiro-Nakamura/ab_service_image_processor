@@ -67,7 +67,7 @@ module.exports = class ImageProcessor extends AB.service {
 
     startup() {
         // Allow processImage() to work when used as an event callback
-        this.processImage.bind(this);
+        this.processImage = this.processImage.bind(this);
 
         // Allow constructor to finish first
         setImmediate(() => {
@@ -114,9 +114,12 @@ module.exports = class ImageProcessor extends AB.service {
      */
     processImage(req, cb) {
         var processedImages = [];
-        var sourceFile;
         var destDir;
-        var extension;
+        var sourceFile = {
+            fullPath: null,
+            stats: null,
+            parsed: null
+        };
 
         async.series(
             [
@@ -138,17 +141,18 @@ module.exports = class ImageProcessor extends AB.service {
 
                 // Check source file
                 (next) => {
-                    sourceFile = path.join(
+                    sourceFile.fullPath = path.join(
                         this.config.inputPath,
                         req.sourceFile
                     );
-                    fs.stat(sourceFile, (err) => {
+                    fs.stat(sourceFile.fullPath, (err, stats) => {
                         if (err) {
                             err.message =
                                 "Unable to read source file: " + sourceFile;
                             next(err);
                         } else {
-                            extension = path.parse(sourceFile).ext;
+                            sourceFile.stats = stats;
+                            sourceFile.parsed = path.parse(sourceFile.fullPath);
                             next();
                         }
                     });
@@ -174,12 +178,13 @@ module.exports = class ImageProcessor extends AB.service {
                             var imageUUID = uuid();
                             var targetFile = path.join(
                                 destDir,
-                                imageUUID + extension
+                                imageUUID + sourceFile.parsed.ext
                             );
                             var command = null;
                             switch (String(opItem.op).toLowerCase()) {
                                 case "orient":
-                                    command = `convert "${sourceFile}" -auto-orient "${targetFile}"`;
+                                    // prettier-ignore
+                                    command = `convert "${sourceFile.fullPath}" -auto-orient "${targetFile}"`;
                                     break;
 
                                 case "resize":
@@ -188,11 +193,8 @@ module.exports = class ImageProcessor extends AB.service {
                                         qualityOpt =
                                             "-quality " + opItem.quality;
                                     }
-                                    command = `convert "${sourceFile}" -auto-orient -resize ${
-                                        opItem.width
-                                    }x${
-                                        opItem.height
-                                    } ${qualityOpt} "${targetFile}"`;
+                                    // prettier-ignore
+                                    command = `convert "${sourceFile.fullPath}" -auto-orient -resize ${opItem.width}x${opItem.height} ${qualityOpt} "${targetFile}"`;
                                     break;
                             }
 
@@ -216,6 +218,8 @@ module.exports = class ImageProcessor extends AB.service {
                                                 tenant: req.tenant,
                                                 sourceFile: req.sourceFile, // exclude path
                                                 targetFile: targetFile,
+                                                size: 0, // to be determined
+                                                type: null, // to be determined
                                                 op: opItem
                                             });
                                             nextOp();
@@ -238,6 +242,59 @@ module.exports = class ImageProcessor extends AB.service {
                     );
                 },
 
+                // Determine image sizes
+                (next) => {
+                    async.each(
+                        processedImages,
+                        (image, nextImage) => {
+                            fs.stat(image.targetFile, (err, stats) => {
+                                // Ignore errors?
+                                if (err) {
+                                    nextImage(err);
+                                    //nextImage();
+                                }
+                                // Record image file size
+                                else {
+                                    image.size = stats.size;
+                                    nextImage();
+                                }
+                            });
+                        },
+                        (err) => {
+                            if (err) next(err);
+                            else next();
+                        }
+                    );
+                },
+
+                // Determine image types
+                (next) => {
+                    async.each(
+                        processedImages,
+                        (image, nextImage) => {
+                            child_process.exec(
+                                `file --mime-type -b ${image.targetFile}`,
+                                (err, stdout) => {
+                                    // Ignore errors?
+                                    if (err) {
+                                        nextImage(err);
+                                        //nextImage();
+                                    }
+                                    // Record image file type
+                                    else {
+                                        image.type = String(stdout).trim();
+                                        nextImage();
+                                    }
+                                }
+                            );
+                        },
+                        (err) => {
+                            if (err) next(err);
+                            else next();
+                        }
+                    );
+                },
+
                 // Record images in database
                 (next) => {
                     async.eachSeries(
@@ -247,16 +304,23 @@ module.exports = class ImageProcessor extends AB.service {
                             this.db.query(
                                 `
                                     INSERT INTO
-                                        op_image
+                                        op_imageupload
                                     SET
                                         uuid = ?,
-                                        appKey = ?,
+                                        app_key = ?,
                                         image = ?,
-                                        date = NOW(),
+                                        size = ?,
+                                        type = ?,
                                         createdAt = NOW(),
                                         updatedAt = NOW()
                                 `,
-                                [image.imageUUID, req.appKey, image.targetFile],
+                                [
+                                    image.uuid,
+                                    req.appKey,
+                                    image.targetFile,
+                                    image.size,
+                                    image.type
+                                ],
                                 (err, result) => {
                                     if (err) nextImage(err);
                                     else {
