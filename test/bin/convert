@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# This is a mock convert command that saves the params it is given into a file
+# named "params".
+
+THISDIR=`dirname $0`
+echo $* > $THISDIR/params
+
+# get the last param
+for LAST; do true; done
+# most likely, the last param is the target filename. create it now.
+touch $LAST
