@@ -47,13 +47,14 @@ before(function(done) {
     // Create the dummy source file
     fs.writeFile("/tmp/" + sourceFile, "testing", (err) => {
         if (err) console.error(err);
-        else done();
+        done();
     });
 });
 
-describe("image_processor", function() {
+describe("ImageProcessor class", function() {
     describe("constructor()", function() {
         it("should emit 'error' if invalid DB config", function(done) {
+            // real ImageProcessor using real MySQL with bad connection
             const obj = new ImageProcessor({
                 name: "Image Processor bad DB",
                 cote: mockCote,
@@ -70,7 +71,7 @@ describe("image_processor", function() {
             });
 
             obj.on("ready", () => {
-                throw new Error("bad config but still initialized somehow");
+                expect.fail("initialized with bad DB config");
                 done();
             });
 
@@ -82,11 +83,11 @@ describe("image_processor", function() {
 
         it("should emit 'ready' if correct DB config", function(done) {
             const mockConnection = { mock: true };
+            // real ImageProcessor using mock MySQL
             const obj = new ImageProcessor({
                 name: "Image Processor mock MySQL",
                 connections: { site: mockConnection },
                 cote: mockCote,
-                // Mock MySQL
                 mysql: {
                     createConnection: (conn) => {
                         expect(conn).equal(mockConnection);
@@ -106,23 +107,13 @@ describe("image_processor", function() {
             });
 
             obj.on("error", (err) => {
-                throw err;
+                expect.fail(err.message || err);
                 done();
             });
         });
     });
 
     describe("processImage()", function() {
-        // We are using the 'convert' command, which is a 3rd party tool
-        // from ImageMagick. We will not test the command itself, and just
-        // assume that it works as expected.
-        // We expect that it will:
-        // - read the source image from the specified path
-        // - produce an error if the source image cannot be read
-        // - process the image according to the options given
-        // - write the resulting image to the specified target path
-        // - produce an error if the target image cannot be written
-
         const obj = new TestImageProcessor({
             name: "Test Image Processor",
             config: {
@@ -230,6 +221,16 @@ describe("image_processor", function() {
                 );
             });
         });
+
+        // We are using the 'convert' command, which is a 3rd party tool
+        // from ImageMagick. We will not test the command itself, and just
+        // assume that it works as expected.
+        // We expect that it will:
+        // - read the source image from the specified path
+        // - produce an error if the source image cannot be read
+        // - process the image according to the options given
+        // - write the resulting image to the specified target path
+        // - produce an error if the target image cannot be written
 
         describe("ImageMagick `convert`", function() {
             const insertID = Math.floor(Math.random() * 1000);
